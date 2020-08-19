@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<body>
+	<input type="file" name="inputfile" id="inputfile" accept=".txt">
+	<br>
+	<br>
+	<div id="chart_div"></div>
+	<br>
+	<div id="chart_div2"></div>
+	<br>
+	<div id="chart_div3"></div>
+	
+<!-- 	<pre id="output"></pre> -->
+</body>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript" src="drawGoogleChart.js"></script>
+<script type="text/javascript">
+	function Gateway() {
+		this.gid = "";
+		this.time_c = [];
+		this.time_t = [];
+		this.time_h = [];
+		this.CO2 = [];
+		this.AIR_TEMP = [];
+		this.AIR_HUMID = [];
+		this.getGid = function(){
+			return this.gid;
+		}
+	}
+	
+	function setGateway(o,g){
+// 		o.time = unix_timestamp(o.time);
+		o.time = o.time*1000;
+		g.gid = o.gid;
+		switch(o.type){
+			case "CO2":
+				g.time_c.push(o.time);
+				g.CO2.push(o.value);
+				break;
+			case "AIR_TEMP":
+				g.time_t.push(o.time);
+				g.AIR_TEMP.push(o.value);
+				break;
+			case "AIR_HUMID":
+				g.time_h.push(o.time);
+				g.AIR_HUMID.push(o.value);
+				break;
+		}
+	}
+	
+	function Gateways() {
+		this.gateways = [];
+		this.gids = [];
+		this.addGateway = function(o){
+			if(this.gids.includes(o.gid)){
+				setGateway(o,this.gateways[this.gids.indexOf(o.gid)]);
+			}else{
+				var ng = new Gateway();
+				this.gateways.push(ng);
+				this.gids.push(o.gid);
+				setGateway(o,this.gateways[this.gateways.length-1]);				
+			}
+		}
+	}
+	
+	function readLine(s){
+		a = s.split("\n");
+		var gwa = new Gateways();
+		for(var i =0; i < a.length; i++){
+			var o = JSON.parse(a[i]);
+			gwa.addGateway(o);
+		}
+		//2차원 배열로 넣는다... 첫번째 date type
+		var row = [];
+		var row2 = [];
+		var row3 = [];
+		var tg = gwa.gateways[0];
+		for(var i =0; i < tg.CO2.length; i++){
+			var a = [];
+			a.push(new Date(tg.time_c[i]));
+			a.push(tg.CO2[i]);
+			row.push(a);
+			var a2 = [];
+			a2.push(new Date(tg.time_t[i]));
+			a2.push(tg.AIR_TEMP[i]);
+			row2.push(a2);
+			var a3 = [];
+			a3.push(new Date(tg.time_h[i]));
+			a3.push(tg.AIR_HUMID[i]);
+			row3.push(a3);
+			
+		}
+		drawBackgroundColor(row);
+		drawTempChart(row2);
+		drawHumidChart(row3);
+// 		var str = "";
+// 		for(var i = 0; i < gwa.gateways.length; i++ ){
+// 			str += "\n\n"
+// 			str += "gid : "+ gwa.gateways[i].gid + "\n";      
+// 			str += "time_c : "+ gwa.gateways[i].time_c + "\n";   
+// 			str += "CO2 : "+ gwa.gateways[i].CO2 + "\n";      
+// 			str += "time_t : "+ gwa.gateways[i].time_t + "\n";   
+// 			str += "AIR_TEMP : "+ gwa.gateways[i].AIR_TEMP + "\n"; 
+// 			str += "time_h : "+ gwa.gateways[i].time_h + "\n";   
+// 			str += "AIR_HUMID : "+ gwa.gateways[i].AIR_HUMID + "\n";
+// 		}
+// 		document.getElementById('output').textContent = str;
+		
+	}
+	
+	function unix_timestamp(t){
+	    var date = new Date(t*1000);
+	    var year = date.getFullYear();
+	    var month = "0" + (date.getMonth()+1);
+	    var day = "0" + date.getDate();
+	    var hour = "0" + date.getHours();
+	    var minute = "0" + date.getMinutes();
+	    var second = "0" + date.getSeconds();
+	    return year + "/" + month.substr(-2) + "/" + day.substr(-2) + " " + hour.substr(-2) + ":" + minute.substr(-2) + ":" + second.substr(-2);
+	}
+	
+	
+	document.getElementById('inputfile').addEventListener('change', function() {
+		var fr = new FileReader();
+		fr.onload = function() {
+// 			document.getElementById('output').textContent = fr.result;
+			readLine(fr.result);
+		}
+		fr.readAsText(this.files[0]);
+	})
+</script>
+</html>

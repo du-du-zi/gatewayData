@@ -71,8 +71,12 @@
 		a = s.split("\n");
 		var gwa = new Gateways();
 		for(var i =0; i < a.length; i++){
-			var o = JSON.parse(a[i]);
-			gwa.addGateway(o);
+			if(a[i] != ""){
+				var o = JSON.parse(a[i]);
+				gwa.addGateway(o);				
+			}else{
+				continue;
+			}
 		}
 		//2차원 배열로 넣는다... 첫번째 date type
 		var row = [];

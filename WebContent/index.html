@@ -6,7 +6,9 @@
 </head>
 <body>
 	<input type="file" name="inputfile" id="inputfile" accept=".txt">
+	<div id="div_select_box"></div>
 	<br>
+	<h1 id="gateway_id"></h1>
 	<br>
 	<div id="chart_div"></div>
 	<br>
@@ -52,10 +54,16 @@
 		}
 	}
 	
-	function Gateways() {
-		this.gateways = [];
-		this.gids = [];
-		this.addGateway = function(o){
+	
+	class Gateways {
+		static instance = new Gateways();
+		
+		constructor(){
+			this.gateways = [];
+			this.gids = [];			
+		}
+		
+		addGateway(o){
 			if(this.gids.includes(o.gid)){
 				setGateway(o,this.gateways[this.gids.indexOf(o.gid)]);
 			}else{
@@ -65,24 +73,21 @@
 				setGateway(o,this.gateways[this.gateways.length-1]);				
 			}
 		}
+		
+		static getInstance(){
+			return this.instance;
+		}
 	}
 	
-	function readLine(s){
-		a = s.split("\n");
-		var gwa = new Gateways();
-		for(var i =0; i < a.length; i++){
-			if(a[i] != ""){
-				var o = JSON.parse(a[i]);
-				gwa.addGateway(o);				
-			}else{
-				continue;
-			}
-		}
+	function drawGraph(gid){
+		var gwa = Gateways.getInstance();
+		var idx = gwa.gids.indexOf(gid);
+		var tg = gwa.gateways[idx];
+		
 		//2차원 배열로 넣는다... 첫번째 date type
 		var row = [];
 		var row2 = [];
 		var row3 = [];
-		var tg = gwa.gateways[0];
 		for(var i =0; i < tg.CO2.length; i++){
 			var a = [];
 			a.push(new Date(tg.time_c[i]));
@@ -101,19 +106,37 @@
 		drawBackgroundColor(row);
 		drawTempChart(row2);
 		drawHumidChart(row3);
-// 		var str = "";
-// 		for(var i = 0; i < gwa.gateways.length; i++ ){
-// 			str += "\n\n"
-// 			str += "gid : "+ gwa.gateways[i].gid + "\n";      
-// 			str += "time_c : "+ gwa.gateways[i].time_c + "\n";   
-// 			str += "CO2 : "+ gwa.gateways[i].CO2 + "\n";      
-// 			str += "time_t : "+ gwa.gateways[i].time_t + "\n";   
-// 			str += "AIR_TEMP : "+ gwa.gateways[i].AIR_TEMP + "\n"; 
-// 			str += "time_h : "+ gwa.gateways[i].time_h + "\n";   
-// 			str += "AIR_HUMID : "+ gwa.gateways[i].AIR_HUMID + "\n";
-// 		}
-// 		document.getElementById('output').textContent = str;
+		document.getElementById('gateway_id').innerHTML = gid;
 		
+	}
+	
+	function readLine(s){
+		a = s.split("\n");
+		var gwa = Gateways.getInstance();
+		for(var i =0; i < a.length; i++){
+			if(a[i] != ""){
+				var o = JSON.parse(a[i]);
+				gwa.addGateway(o);				
+			}else{
+				continue;
+			}
+		}
+		createOpt(gwa.gids);
+		
+	}
+	
+	function createOpt(gids){
+		var select = document.createElement('select');
+		for(var i =0; i < gids.length; i++){
+			var opt = document.createElement('option');
+			opt.setAttribute('value', gids[i]);
+			opt.innerText = gids[i];
+			select.appendChild(opt);			
+		}
+		document.getElementById('div_select_box').appendChild(select);
+		document.getElementById('div_select_box').addEventListener('change',function(){
+			drawGraph(event.target.value);
+		});
 	}
 	
 	function unix_timestamp(t){

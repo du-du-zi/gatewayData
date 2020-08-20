@@ -127,6 +127,10 @@
 	
 	function createOpt(gids){
 		var select = document.createElement('select');
+		var op = document.createElement('option');
+		op.setAttribute('value', '선택하세요');
+		op.innerText = '선택하세요';
+		select.appendChild(op);			
 		for(var i =0; i < gids.length; i++){
 			var opt = document.createElement('option');
 			opt.setAttribute('value', gids[i]);

@@ -5,39 +5,44 @@
 <title>Insert title here</title>
 </head>
 <body>
+	<input type="file" name="inputfile" id="inputfile" accept=".txt">
+	<div id="div_select_box"></div>
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-       <div id="chart_div" style="width: 100%;"></div>
+<br>
+<h1 id="gateway_id"></h1>
+	<br>
+<div id="chart_div" style="width: 100%;"></div>
        
 <script type="text/javascript">
 google.charts.load('current', {'packages':['corechart']});
-google.charts.setOnLoadCallback(drawChart);
+// google.charts.setOnLoadCallback(drawChart);
 function drawChart(data) {
-  var data = google.visualization.arrayToDataTable([
-   ['Year', 'Sales'],
-    [new Date(2001,01,01),  30],
-    [new Date(2002,01,01),  70],
-    [new Date(2003,01,01),  45],
-    [new Date(2004,01,01),  99]
-  ]);
+  var data = google.visualization.arrayToDataTable(data);
+//    ['Year', 'Sales'],
+//     [new Date(2001,01,01),  30],
+//     [new Date(2002,01,01),  70],
+//     [new Date(2003,01,01),  45],
+//     [new Date(2004,01,01),  99]
+//   ]);
 
   var options = {
     title: 'data',
-    hAxis: {title: 'time',  titleTextStyle: {color: '#333'},
-             slantedText:true, slantedTextAngle:80},
-    vAxis: {minValue: 0},
+    hAxis: {title: 'time'},
+    vAxis: {title: 'CO2'},
+//     hAxis: {title: 'time',  titleTextStyle: {color: '#333'},
+//              slantedText:true, slantedTextAngle:80},
+//     vAxis: {minValue: 0},
     explorer: { 
       actions: ['dragToZoom', 'rightClickToReset'],
       axis: 'horizontal',
       keepInBounds: true,
-      maxZoomIn: 100.0},
+      maxZoomIn: 1000.0},
     colors: ['#0635E3'],
   };
 
   var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
   chart.draw(data, options);
 }
-
-
 	function Gateway() {
 		this.gid = "";
 		this.time_c = [];
@@ -52,6 +57,7 @@ function drawChart(data) {
 	}
 	
 	function setGateway(o,g){
+// 		o.time = unix_timestamp(o.time);
 		o.time = o.time*1000;
 		g.gid = o.gid;
 		switch(o.type){
@@ -70,10 +76,16 @@ function drawChart(data) {
 		}
 	}
 	
-	function Gateways() {
-		this.gateways = [];
-		this.gids = [];
-		this.addGateway = function(o){
+	
+	class Gateways {
+		static instance = new Gateways();
+		
+		constructor(){
+			this.gateways = [];
+			this.gids = [];			
+		}
+		
+		addGateway(o){
 			if(this.gids.includes(o.gid)){
 				setGateway(o,this.gateways[this.gids.indexOf(o.gid)]);
 			}else{
@@ -83,11 +95,31 @@ function drawChart(data) {
 				setGateway(o,this.gateways[this.gateways.length-1]);				
 			}
 		}
+		
+		static getInstance(){
+			return this.instance;
+		}
 	}
-
+	
+	function makeData(gid){
+		var gwa = Gateways.getInstance();
+		var idx = gwa.gids.indexOf(gid);
+		var tg = gwa.gateways[idx];
+		
+		//2차원 배열로 넣는다... 첫번째 date type
+		var row = [['Year', 'CO2']];
+		for(var i =0; i < tg.CO2.length; i++){
+			var a = [];
+			a.push(new Date(tg.time_c[i]));
+			a.push(tg.CO2[i]);
+			row.push(a);			
+		}
+		drawChart(row);
+	}
+	
 	function readLine(s){
 		a = s.split("\n");
-		var gwa = new Gateways();
+		var gwa = Gateways.getInstance();
 		for(var i =0; i < a.length; i++){
 			if(a[i] != ""){
 				var o = JSON.parse(a[i]);
@@ -96,17 +128,37 @@ function drawChart(data) {
 				continue;
 			}
 		}
+		createOpt(gwa.gids);
+		
 	}
+	
+	function createOpt(gids){
+		var select = document.createElement('select');
+		var op = document.createElement('option');
+		op.setAttribute('value', '선택하세요');
+		op.innerText = '선택하세요';
+		select.appendChild(op);			
+		for(var i =0; i < gids.length; i++){
+			var opt = document.createElement('option');
+			opt.setAttribute('value', gids[i]);
+			opt.innerText = gids[i];
+			select.appendChild(opt);			
+		}
+		document.getElementById('div_select_box').appendChild(select);
+		document.getElementById('div_select_box').addEventListener('change',function(){
+			makeData(event.target.value);
+		});
+	}
+
+	
 	
 	document.getElementById('inputfile').addEventListener('change', function() {
 		var fr = new FileReader();
 		fr.onload = function() {
 			readLine(fr.result);
 		}
-		fr.readAsText(this.files[0]);			
-
+		fr.readAsText(this.files[0]);
 	})
-
 </script>
 </body>
 </html>

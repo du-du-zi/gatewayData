@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<body>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+       <div id="chart_div" style="width: 100%;"></div>
+       
+<script type="text/javascript">
+google.charts.load('current', {'packages':['corechart']});
+google.charts.setOnLoadCallback(drawChart);
+function drawChart(data) {
+  var data = google.visualization.arrayToDataTable([
+   ['Year', 'Sales'],
+    [new Date(2001,01,01),  30],
+    [new Date(2002,01,01),  70],
+    [new Date(2003,01,01),  45],
+    [new Date(2004,01,01),  99]
+  ]);
+
+  var options = {
+    title: 'data',
+    hAxis: {title: 'time',  titleTextStyle: {color: '#333'},
+             slantedText:true, slantedTextAngle:80},
+    vAxis: {minValue: 0},
+    explorer: { 
+      actions: ['dragToZoom', 'rightClickToReset'],
+      axis: 'horizontal',
+      keepInBounds: true,
+      maxZoomIn: 100.0},
+    colors: ['#0635E3'],
+  };
+
+  var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+  chart.draw(data, options);
+}
+
+
+	function Gateway() {
+		this.gid = "";
+		this.time_c = [];
+		this.time_t = [];
+		this.time_h = [];
+		this.CO2 = [];
+		this.AIR_TEMP = [];
+		this.AIR_HUMID = [];
+		this.getGid = function(){
+			return this.gid;
+		}
+	}
+	
+	function setGateway(o,g){
+		o.time = o.time*1000;
+		g.gid = o.gid;
+		switch(o.type){
+			case "CO2":
+				g.time_c.push(o.time);
+				g.CO2.push(o.value);
+				break;
+			case "AIR_TEMP":
+				g.time_t.push(o.time);
+				g.AIR_TEMP.push(o.value);
+				break;
+			case "AIR_HUMID":
+				g.time_h.push(o.time);
+				g.AIR_HUMID.push(o.value);
+				break;
+		}
+	}
+	
+	function Gateways() {
+		this.gateways = [];
+		this.gids = [];
+		this.addGateway = function(o){
+			if(this.gids.includes(o.gid)){
+				setGateway(o,this.gateways[this.gids.indexOf(o.gid)]);
+			}else{
+				var ng = new Gateway();
+				this.gateways.push(ng);
+				this.gids.push(o.gid);
+				setGateway(o,this.gateways[this.gateways.length-1]);				
+			}
+		}
+	}
+
+	function readLine(s){
+		a = s.split("\n");
+		var gwa = new Gateways();
+		for(var i =0; i < a.length; i++){
+			if(a[i] != ""){
+				var o = JSON.parse(a[i]);
+				gwa.addGateway(o);				
+			}else{
+				continue;
+			}
+		}
+	}
+	
+	document.getElementById('inputfile').addEventListener('change', function() {
+		var fr = new FileReader();
+		fr.onload = function() {
+			readLine(fr.result);
+		}
+		fr.readAsText(this.files[0]);			
+
+	})
+
+</script>
+</body>
+</html>
